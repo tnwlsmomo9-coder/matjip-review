@@ -1,0 +1,22 @@
+@import "tailwindcss";
+@import "pretendard/dist/web/variable/pretendardvariable.css";
+
+@theme {
+  --color-surface: #FDFBF7;
+  --color-surface-alt: #F4F4F2;
+  --color-ink: #1A1A1A;
+  --color-accent: #FF5E1A;
+  --color-accent-sub: #FFC93C;
+  --color-hairline: #E5E5E2;
+
+  --font-heading: "PretendardVariable", var(--font-inter-tight), sans-serif;
+  --font-body: "PretendardVariable", sans-serif;
+
+  --radius-btn: 10px;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
