@@ -42,8 +42,8 @@ export default function NearbyExploreSection() {
   const t = copy[lang];
 
   return (
-    <section className="mx-auto w-full max-w-md sm:max-w-lg lg:max-w-xl">
-      <div className="relative flex aspect-square flex-col items-center justify-center gap-3 rounded-[10px] border border-hairline bg-accent/5 p-6 text-center sm:gap-4 sm:p-8 lg:p-10">
+    <section className="mx-auto w-full max-w-md sm:max-w-lg lg:max-w-md">
+      <div className="relative flex aspect-square flex-col items-center justify-center gap-3 rounded-[10px] border border-hairline bg-accent/5 p-6 text-center sm:gap-4 sm:p-8 lg:gap-3 lg:p-8">
         <div className="absolute top-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-[10px] border border-hairline bg-white p-1 sm:top-5 lg:top-6">
           {(["ko", "en"] as const).map((l) => (
             <button
@@ -64,7 +64,7 @@ export default function NearbyExploreSection() {
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-sub/40 sm:h-14 sm:w-14 lg:h-16 lg:w-16">
             <MapPin className="h-6 w-6 text-accent sm:h-7 sm:w-7 lg:h-8 lg:w-8" aria-hidden />
           </span>
-          <h2 className="font-heading text-3xl font-extrabold leading-tight tracking-tight text-ink sm:text-4xl lg:text-5xl">
+          <h2 className="font-heading text-3xl font-extrabold leading-tight tracking-tight text-ink sm:text-4xl lg:text-4xl">
             <SplitReveal tokens={t.heading} />
           </h2>
           <p className="mt-1 text-sm text-ink/60 sm:text-base">{t.body}</p>

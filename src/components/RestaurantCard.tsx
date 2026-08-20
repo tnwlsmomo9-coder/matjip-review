@@ -5,14 +5,14 @@ import TrustBadge from "@/components/TrustBadge";
 
 export default function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
   return (
-    <article className="overflow-hidden rounded-[10px] border border-hairline bg-white">
-      <div className="relative aspect-[4/3] w-full">
+    <article className="group overflow-hidden rounded-[10px] border border-hairline bg-white transition-colors hover:border-ink/20">
+      <div className="relative aspect-[4/3] w-full overflow-hidden">
         <Image
           src={restaurant.imageUrl}
           alt={restaurant.name}
           fill
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-          className="object-cover"
+          className="object-cover transition-transform duration-200 group-hover:scale-[1.02]"
         />
       </div>
       <div className="flex flex-col gap-2 p-5">
