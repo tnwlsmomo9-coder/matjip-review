@@ -19,7 +19,7 @@ This is the mock/static-UI first pass of a restaurant review service. Two docs a
 - `PRD_1.md` — product scope, MVP vs Phase 2, feature definitions (search/explore, guided reviews, receipt-verified anti-troll reviews, trust scoring, etc.)
 - `DESIGN_1.md` — mood, color palette, typography, and component style rules
 
-Current scope is intentionally narrow: **no backend, no real map API (Kakao/Naver), no auth, no database** — everything renders from static mock data in `src/lib/mock-restaurants.ts`. Location-based features are UI-only (no `navigator.geolocation` calls). Don't wire up real integrations unless asked.
+Current scope is intentionally narrow: **no backend, no auth, no database**. The home page still renders entirely from static mock data in `src/lib/mock-restaurants.ts`, and location-based features there remain UI-only (no `navigator.geolocation` calls). The one exception is `/search` (`src/app/search/page.tsx`), which calls the real Kakao Local API client-side via `src/lib/kakao-local.ts`, gated by the `NEXT_PUBLIC_KAKAO_REST_API_KEY` env var (see `.env.local.example` for setup). Don't wire up further real integrations (e.g. Naver, a second map provider) unless asked.
 
 ## Architecture
 
@@ -29,3 +29,9 @@ Current scope is intentionally narrow: **no backend, no real map API (Kakao/Nave
 - `src/types/restaurant.ts` defines the `Restaurant` shape; `src/lib/mock-restaurants.ts` holds the mock dataset. Any new mock content should follow the same PRD-flavored shape (guide-question-style one-line review, landmark/subway-exit distance text, trust/save counts) rather than generic placeholder copy.
 - `src/components/` holds presentational, single-purpose home-screen sections (`Header`, `SearchBar`, `NearbyExploreSection`, `PopularRestaurants`, `RestaurantCard`, `TrustBadge`). Not all of them are currently wired into `src/app/page.tsx` — check `page.tsx` to see what's actually rendered before assuming a component is live on the page.
 - Icons come from `lucide-react`; don't hand-roll SVGs or add a second icon library.
+
+## 반응형
+- 모바일(375)
+- 태블릿(768)
+- 데스크탑(1180)
+으로 브레이크포인트 설정
