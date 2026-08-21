@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, MapPin } from "lucide-react";
 import SplitReveal, { type SplitToken } from "@/components/SplitReveal";
 import SearchBar from "@/components/SearchBar";
-
-type Lang = "ko" | "en";
+import { useLanguage, type Lang } from "@/components/LanguageProvider";
 
 const copy: Record<
   Lang,
@@ -47,7 +46,7 @@ const copy: Record<
 };
 
 export default function NearbyExploreSection() {
-  const [lang, setLang] = useState<Lang>("ko");
+  const { lang, setLang } = useLanguage();
   const [query, setQuery] = useState("");
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState(false);

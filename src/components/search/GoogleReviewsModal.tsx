@@ -6,6 +6,7 @@ import type { KakaoPlaceDocument } from "@/types/kakao";
 import type { GooglePlaceReviewData, GooglePlaceReviewResult } from "@/types/google-places";
 import { getCachedGoogleReview, setCachedGoogleReview } from "@/lib/review-cache";
 import ReviewAnalysisPanel from "@/components/search/ReviewAnalysisPanel";
+import { useLanguage, type Lang } from "@/components/LanguageProvider";
 
 type ReviewView =
   | { status: "loading" }
@@ -17,16 +18,51 @@ function viewFromResult(result: GooglePlaceReviewResult): ReviewView {
   return result.found ? { status: "found", data: result.place } : { status: "not_found" };
 }
 
+const copy: Record<
+  Lang,
+  {
+    close: string;
+    loading: string;
+    notFound: string;
+    error: string;
+    reviewCount: (count: number) => string;
+    noReviews: string;
+    viewAllOnGoogleMaps: string;
+  }
+> = {
+  ko: {
+    close: "닫기",
+    loading: "리뷰를 불러오는 중 …",
+    notFound: "구글에서 이 가게를 찾을 수 없어요.",
+    error: "리뷰를 불러오지 못했어요. 잠시 후 다시 시도해주세요.",
+    reviewCount: (count) => `리뷰 ${count}개`,
+    noReviews: "아직 등록된 리뷰가 없어요.",
+    viewAllOnGoogleMaps: "구글 맵에서 전체 리뷰 보기",
+  },
+  en: {
+    close: "Close",
+    loading: "Loading reviews …",
+    notFound: "Couldn't find this place on Google.",
+    error: "Couldn't load reviews. Please try again in a moment.",
+    reviewCount: (count) => `${count} reviews`,
+    noReviews: "No reviews yet.",
+    viewAllOnGoogleMaps: "See all reviews on Google Maps",
+  },
+};
+
 interface GoogleReviewsModalProps {
   place: KakaoPlaceDocument;
   onClose: () => void;
 }
 
 export default function GoogleReviewsModal({ place, onClose }: GoogleReviewsModalProps) {
+  const { lang } = useLanguage();
+  const t = copy[lang];
+
   // Lazy-initialized from the browser cache so a cache hit never needs an
   // effect to call setState synchronously — it's just the initial render.
   const [view, setView] = useState<ReviewView>(() => {
-    const cached = getCachedGoogleReview(place.id);
+    const cached = getCachedGoogleReview(lang, place.id);
     return cached ? viewFromResult(cached) : { status: "loading" };
   });
 
@@ -45,7 +81,7 @@ export default function GoogleReviewsModal({ place, onClose }: GoogleReviewsModa
 
     (async () => {
       try {
-        const params = new URLSearchParams({ name: place.place_name, lat: place.y, lng: place.x });
+        const params = new URLSearchParams({ name: place.place_name, lat: place.y, lng: place.x, lang });
         const response = await fetch(`/api/google-place-reviews?${params.toString()}`, {
           signal: controller.signal,
         });
@@ -54,7 +90,7 @@ export default function GoogleReviewsModal({ place, onClose }: GoogleReviewsModa
           return;
         }
         const result = (await response.json()) as GooglePlaceReviewResult;
-        setCachedGoogleReview(place.id, result);
+        setCachedGoogleReview(lang, place.id, result);
         setView(viewFromResult(result));
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -64,7 +100,7 @@ export default function GoogleReviewsModal({ place, onClose }: GoogleReviewsModa
 
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [place.id]);
+  }, [place.id, lang]);
 
   return (
     <div
@@ -81,7 +117,7 @@ export default function GoogleReviewsModal({ place, onClose }: GoogleReviewsModa
           <button
             type="button"
             onClick={onClose}
-            aria-label="닫기"
+            aria-label={t.close}
             className="shrink-0 rounded-[10px] p-1 text-ink/50 transition-colors hover:bg-surface-alt hover:text-ink"
           >
             <X className="h-4 w-4" aria-hidden />
@@ -90,26 +126,26 @@ export default function GoogleReviewsModal({ place, onClose }: GoogleReviewsModa
 
         {view.status === "loading" && (
           <div className="flex items-center justify-center rounded-[10px] border border-hairline bg-white px-4 py-16 text-center">
-            <p className="text-sm text-ink/60">리뷰를 불러오는 중 …</p>
+            <p className="text-sm text-ink/60">{t.loading}</p>
           </div>
         )}
 
         {view.status === "not_found" && (
           <div className="flex items-center justify-center rounded-[10px] border border-hairline bg-white px-4 py-16 text-center">
-            <p className="text-sm text-ink/60">구글에서 이 가게를 찾을 수 없어요.</p>
+            <p className="text-sm text-ink/60">{t.notFound}</p>
           </div>
         )}
 
         {view.status === "error" && (
           <div className="flex items-center justify-center rounded-[10px] border border-hairline bg-white px-4 py-16 text-center">
-            <p className="text-sm text-ink/60">리뷰를 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>
+            <p className="text-sm text-ink/60">{t.error}</p>
           </div>
         )}
 
         {view.status === "found" && (
           <div className="flex flex-col gap-4">
             <span className="inline-flex w-fit items-center rounded-[10px] bg-accent-sub/30 px-2.5 py-1 text-xs font-semibold text-ink">
-              ⭐ {view.data.rating.toFixed(1)} · 리뷰 {view.data.userRatingCount}개
+              ⭐ {view.data.rating.toFixed(1)} · {t.reviewCount(view.data.userRatingCount)}
             </span>
 
             {view.data.reviews.length > 0 && (
@@ -131,7 +167,7 @@ export default function GoogleReviewsModal({ place, onClose }: GoogleReviewsModa
                 </li>
               ))}
               {view.data.reviews.length === 0 && (
-                <li className="text-sm text-ink/60">아직 등록된 리뷰가 없어요.</li>
+                <li className="text-sm text-ink/60">{t.noReviews}</li>
               )}
             </ul>
 
@@ -142,7 +178,7 @@ export default function GoogleReviewsModal({ place, onClose }: GoogleReviewsModa
                 rel="noreferrer"
                 className="text-sm font-medium text-accent underline underline-offset-2"
               >
-                구글 맵에서 전체 리뷰 보기
+                {t.viewAllOnGoogleMaps}
               </a>
             )}
           </div>

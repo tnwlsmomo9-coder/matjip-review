@@ -15,28 +15,72 @@ import {
   type CategoryFilterValue,
 } from "@/lib/kakao-local";
 import type { KakaoPlaceDocument } from "@/types/kakao";
+import { useLanguage, type Lang } from "@/components/LanguageProvider";
 
 const PAGE_SIZE = 30;
 
 type Status = "idle" | "loading" | "success" | "error";
 
-function messageForError(error: unknown): string {
+const copy: Record<
+  Lang,
+  {
+    title: string;
+    subtitleNearby: string;
+    subtitleSearch: string;
+    home: string;
+    prevPage: string;
+    nextPage: string;
+    page: (n: number) => string;
+    keyConfigError: string;
+    rateLimitError: string;
+    genericError: string;
+  }
+> = {
+  ko: {
+    title: "내 주변 맛집",
+    subtitleNearby: "가까운 순서로 맛집을 보여드려요.",
+    subtitleSearch: "키워드나 카테고리로 근처 맛집을 검색해보세요.",
+    home: "처음 화면",
+    prevPage: "이전 페이지",
+    nextPage: "다음 페이지",
+    page: (n) => `${n}페이지`,
+    keyConfigError: "카카오 API 키 설정을 확인해주세요.",
+    rateLimitError: "요청이 많아 잠시 후 다시 시도해주세요.",
+    genericError: "검색 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.",
+  },
+  en: {
+    title: "Nearby Restaurants",
+    subtitleNearby: "Showing restaurants sorted by distance.",
+    subtitleSearch: "Search nearby restaurants by keyword or category.",
+    home: "Home",
+    prevPage: "Previous",
+    nextPage: "Next",
+    page: (n) => `Page ${n}`,
+    keyConfigError: "Please check the Kakao API key configuration.",
+    rateLimitError: "Too many requests — please try again in a moment.",
+    genericError: "Something went wrong while searching. Please try again in a moment.",
+  },
+};
+
+function messageForError(error: unknown, t: (typeof copy)[Lang]): string {
   if (error instanceof KakaoConfigError) {
-    return "카카오 API 키 설정을 확인해주세요.";
+    return t.keyConfigError;
   }
   if (error instanceof KakaoApiError) {
     if (error.status === 401) {
-      return "카카오 API 키 설정을 확인해주세요.";
+      return t.keyConfigError;
     }
     if (error.status === 429) {
-      return "요청이 많아 잠시 후 다시 시도해주세요.";
+      return t.rateLimitError;
     }
-    return "검색 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.";
+    return t.genericError;
   }
-  return "검색 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.";
+  return t.genericError;
 }
 
 function SearchPageInner() {
+  const { lang } = useLanguage();
+  const t = copy[lang];
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") ?? "";
   const lat = searchParams.get("lat");
@@ -77,7 +121,7 @@ function SearchPageInner() {
         return;
       }
       setAllResults([]);
-      setErrorMessage(messageForError(error));
+      setErrorMessage(messageForError(error, t));
       setStatus("error");
     }
   };
@@ -103,7 +147,7 @@ function SearchPageInner() {
         return;
       }
       setAllResults([]);
-      setErrorMessage(messageForError(error));
+      setErrorMessage(messageForError(error, t));
       setStatus("error");
     }
   };
@@ -154,18 +198,16 @@ function SearchPageInner() {
     <main className="mx-auto flex w-full max-w-[1180px] flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="font-heading text-2xl font-bold text-ink">내 주변 맛집</h1>
+          <h1 className="font-heading text-2xl font-bold text-ink">{t.title}</h1>
           <p className="text-sm text-ink/60">
-            {hasCoords
-              ? "가까운 순서로 맛집을 보여드려요."
-              : "키워드나 카테고리로 근처 맛집을 검색해보세요."}
+            {hasCoords ? t.subtitleNearby : t.subtitleSearch}
           </p>
         </div>
         <Link
           href="/"
           className="shrink-0 rounded-[10px] border border-hairline px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
         >
-          처음 화면
+          {t.home}
         </Link>
       </div>
 
@@ -196,16 +238,16 @@ function SearchPageInner() {
               disabled={uiPage === 1}
               className="rounded-[10px] border border-hairline px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:pointer-events-none disabled:opacity-40"
             >
-              이전 페이지
+              {t.prevPage}
             </button>
-            <span className="text-sm text-ink/60">{uiPage}페이지</span>
+            <span className="text-sm text-ink/60">{t.page(uiPage)}</span>
             <button
               type="button"
               onClick={goToNextPage}
               disabled={!hasNextPage}
               className="rounded-[10px] border border-hairline px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:pointer-events-none disabled:opacity-40"
             >
-              다음 페이지
+              {t.nextPage}
             </button>
           </div>
         </>

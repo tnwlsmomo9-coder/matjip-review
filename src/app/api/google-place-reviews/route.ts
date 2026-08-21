@@ -14,6 +14,7 @@ export async function GET(request: Request) {
   const lngParam = searchParams.get("lng");
   const lat = latParam ? Number(latParam) : NaN;
   const lng = lngParam ? Number(lngParam) : NaN;
+  const lang = searchParams.get("lang") === "en" ? "en" : "ko";
 
   if (!name || !Number.isFinite(lat) || !Number.isFinite(lng)) {
     return NextResponse.json({ error: "name, lat, lng are required" }, { status: 400 });
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
       return NextResponse.json(result);
     }
 
-    const place = await getPlaceReviewDetails(placeId);
+    const place = await getPlaceReviewDetails(placeId, lang);
     const result: GooglePlaceReviewResult = { found: true, place };
     return NextResponse.json(result);
   } catch (error) {

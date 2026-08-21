@@ -1,6 +1,7 @@
 "use client";
 
 import { CATEGORY_GROUPS, type CategoryFilterValue } from "@/lib/kakao-local";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface CategoryChipsProps {
   selected: CategoryFilterValue;
@@ -8,6 +9,8 @@ interface CategoryChipsProps {
 }
 
 export default function CategoryChips({ selected, onSelect }: CategoryChipsProps) {
+  const { lang } = useLanguage();
+
   return (
     <div className="flex flex-wrap gap-2">
       {CATEGORY_GROUPS.map((group) => {
@@ -24,7 +27,7 @@ export default function CategoryChips({ selected, onSelect }: CategoryChipsProps
                 : "rounded-[10px] border border-hairline px-4 py-2 text-sm font-medium text-ink"
             }
           >
-            {group.label}
+            {lang === "en" ? group.labelEn : group.label}
           </button>
         );
       })}

@@ -5,6 +5,12 @@ import { Heart, MapPin, Phone } from "lucide-react";
 import type { KakaoPlaceDocument } from "@/types/kakao";
 import GoogleReviewsModal from "@/components/search/GoogleReviewsModal";
 import { isFavorited as getIsFavorited, toggleFavorite } from "@/lib/favorites";
+import { useLanguage, type Lang } from "@/components/LanguageProvider";
+
+const copy: Record<Lang, { favorite: string; unfavorite: string; viewOnKakaoMap: string }> = {
+  ko: { favorite: "찜하기", unfavorite: "찜 해제", viewOnKakaoMap: "카카오맵에서 보기" },
+  en: { favorite: "Add to favorites", unfavorite: "Remove from favorites", viewOnKakaoMap: "View on Kakao Map" },
+};
 
 function lastCategorySegment(categoryName: string): string {
   const segments = categoryName.split(" > ").filter(Boolean);
@@ -19,6 +25,8 @@ interface SearchResultCardProps {
 }
 
 export default function SearchResultCard({ place, onFavoriteChange }: SearchResultCardProps) {
+  const { lang } = useLanguage();
+  const t = copy[lang];
   const address = place.road_address_name || place.address_name;
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [favorited, setFavorited] = useState(() => getIsFavorited(place.id));
@@ -47,7 +55,7 @@ export default function SearchResultCard({ place, onFavoriteChange }: SearchResu
             )}
             <button
               type="button"
-              aria-label={favorited ? "찜 해제" : "찜하기"}
+              aria-label={favorited ? t.unfavorite : t.favorite}
               aria-pressed={favorited}
               onClick={(event) => {
                 event.stopPropagation();
@@ -81,7 +89,7 @@ export default function SearchResultCard({ place, onFavoriteChange }: SearchResu
           onClick={(event) => event.stopPropagation()}
           className="mt-2 text-sm font-medium text-accent underline underline-offset-2"
         >
-          카카오맵에서 보기
+          {t.viewOnKakaoMap}
         </a>
       </article>
       {reviewsOpen && <GoogleReviewsModal place={place} onClose={() => setReviewsOpen(false)} />}

@@ -5,17 +5,33 @@ import { Sparkles } from "lucide-react";
 import type { GooglePlaceReviewItem } from "@/types/google-places";
 import type { ReviewAnalysis } from "@/types/review-analysis";
 import { getCachedAnalysis, setCachedAnalysis } from "@/lib/review-analysis-cache";
+import { useLanguage, type Lang } from "@/components/LanguageProvider";
 
 type AnalysisView =
   | { status: "loading" }
   | { status: "done"; data: ReviewAnalysis }
   | { status: "error" };
 
-const SENTIMENT_LABELS: { key: keyof ReviewAnalysis["sentiment"]; label: string; barClass: string }[] = [
-  { key: "positive", label: "긍정", barClass: "bg-positive" },
-  { key: "neutral", label: "보통", barClass: "bg-neutral" },
-  { key: "negative", label: "부정", barClass: "bg-negative" },
-];
+const SENTIMENT_LABELS: Record<
+  Lang,
+  { key: keyof ReviewAnalysis["sentiment"]; label: string; barClass: string }[]
+> = {
+  ko: [
+    { key: "positive", label: "긍정", barClass: "bg-positive" },
+    { key: "neutral", label: "보통", barClass: "bg-neutral" },
+    { key: "negative", label: "부정", barClass: "bg-negative" },
+  ],
+  en: [
+    { key: "positive", label: "Positive", barClass: "bg-positive" },
+    { key: "neutral", label: "Neutral", barClass: "bg-neutral" },
+    { key: "negative", label: "Negative", barClass: "bg-negative" },
+  ],
+};
+
+const copy: Record<Lang, { title: string; loading: string; error: string }> = {
+  ko: { title: "AI 리뷰 분석", loading: "AI 리뷰를 분석하는 중 …", error: "AI 분석을 불러오지 못했어요." },
+  en: { title: "AI Review Analysis", loading: "Analyzing reviews with AI …", error: "Couldn't load AI analysis." },
+};
 
 function keywordFontSize(score: number): number {
   const clamped = Math.min(10, Math.max(1, score));
@@ -29,8 +45,12 @@ interface ReviewAnalysisPanelProps {
 }
 
 export default function ReviewAnalysisPanel({ placeId, placeName, reviews }: ReviewAnalysisPanelProps) {
+  const { lang } = useLanguage();
+  const t = copy[lang];
+  const sentimentLabels = SENTIMENT_LABELS[lang];
+
   const [view, setView] = useState<AnalysisView>(() => {
-    const cached = getCachedAnalysis(placeId);
+    const cached = getCachedAnalysis(lang, placeId);
     return cached ? { status: "done", data: cached } : { status: "loading" };
   });
 
@@ -47,6 +67,7 @@ export default function ReviewAnalysisPanel({ placeId, placeName, reviews }: Rev
           body: JSON.stringify({
             placeName,
             reviews: reviews.map((review) => ({ rating: review.rating, text: review.text })),
+            lang,
           }),
           signal: controller.signal,
         });
@@ -55,7 +76,7 @@ export default function ReviewAnalysisPanel({ placeId, placeName, reviews }: Rev
           return;
         }
         const result = (await response.json()) as { analysis: ReviewAnalysis };
-        setCachedAnalysis(placeId, result.analysis);
+        setCachedAnalysis(lang, placeId, result.analysis);
         setView({ status: "done", data: result.analysis });
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -65,19 +86,19 @@ export default function ReviewAnalysisPanel({ placeId, placeName, reviews }: Rev
 
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [placeId]);
+  }, [placeId, lang]);
 
   if (view.status === "error") {
-    return <p className="text-xs text-ink/50">AI 분석을 불러오지 못했어요.</p>;
+    return <p className="text-xs text-ink/50">{t.error}</p>;
   }
 
   return (
     <div className="flex flex-col gap-3 border-b border-hairline pb-4">
-      <h3 className="font-heading text-sm font-bold text-ink">AI 리뷰 분석</h3>
+      <h3 className="font-heading text-sm font-bold text-ink">{t.title}</h3>
 
       {view.status === "loading" && (
         <div className="flex items-center justify-center rounded-[10px] border border-hairline bg-white px-4 py-8 text-center">
-          <p className="text-sm text-ink/60">AI 리뷰를 분석하는 중 …</p>
+          <p className="text-sm text-ink/60">{t.loading}</p>
         </div>
       )}
 
@@ -85,7 +106,7 @@ export default function ReviewAnalysisPanel({ placeId, placeName, reviews }: Rev
         <>
           <div className="flex flex-col gap-1.5">
             <div className="flex h-3 overflow-hidden rounded-full bg-surface-alt">
-              {SENTIMENT_LABELS.map(({ key, barClass }) => {
+              {sentimentLabels.map(({ key, barClass }) => {
                 const total =
                   view.data.sentiment.positive + view.data.sentiment.neutral + view.data.sentiment.negative;
                 const width = total > 0 ? (view.data.sentiment[key] / total) * 100 : 0;
@@ -93,7 +114,7 @@ export default function ReviewAnalysisPanel({ placeId, placeName, reviews }: Rev
               })}
             </div>
             <p className="text-xs text-ink/60">
-              {SENTIMENT_LABELS.map(({ key, label }) => `${label} ${view.data.sentiment[key]}`).join(" · ")}
+              {sentimentLabels.map(({ key, label }) => `${label} ${view.data.sentiment[key]}`).join(" · ")}
             </p>
           </div>
 

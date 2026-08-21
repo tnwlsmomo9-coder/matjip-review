@@ -32,15 +32,19 @@ export class KakaoConfigError extends Error {
 // so cuisine filtering has to happen client-side after fetching FD6 results.
 export type CategoryFilterValue = "all" | "한식" | "중식" | "일식" | "양식" | "분식" | "기타음식점" | "카페";
 
-export const CATEGORY_GROUPS: { label: string; value: CategoryFilterValue }[] = [
-  { label: "전체", value: "all" },
-  { label: "한식", value: "한식" },
-  { label: "중식", value: "중식" },
-  { label: "일식", value: "일식" },
-  { label: "양식", value: "양식" },
-  { label: "분식", value: "분식" },
-  { label: "그외", value: "기타음식점" },
-  { label: "카페", value: "카페" },
+// `value` stays Korean regardless of UI language — it's the literal keyword/
+// category text used to query Kakao (see CUISINE_SEARCH_KEYWORDS below), so
+// translating it would break the search itself. Only `labelEn` (the chip's
+// displayed text in English mode) is a pure UI translation.
+export const CATEGORY_GROUPS: { label: string; labelEn: string; value: CategoryFilterValue }[] = [
+  { label: "전체", labelEn: "All", value: "all" },
+  { label: "한식", labelEn: "Korean", value: "한식" },
+  { label: "중식", labelEn: "Chinese", value: "중식" },
+  { label: "일식", labelEn: "Japanese", value: "일식" },
+  { label: "양식", labelEn: "Western", value: "양식" },
+  { label: "분식", labelEn: "Snacks", value: "분식" },
+  { label: "그외", labelEn: "Other", value: "기타음식점" },
+  { label: "카페", labelEn: "Cafe", value: "카페" },
 ];
 
 const CUISINE_LABELS = new Set(["한식", "중식", "일식", "양식", "분식"]);

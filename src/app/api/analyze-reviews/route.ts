@@ -4,6 +4,7 @@ import { GeminiApiError, GeminiConfigError, analyzeReviews } from "@/lib/gemini"
 interface AnalyzeReviewsBody {
   placeName?: string;
   reviews?: { rating: number; text: string }[];
+  lang?: string;
 }
 
 export async function POST(request: Request) {
@@ -16,13 +17,14 @@ export async function POST(request: Request) {
 
   const placeName = body.placeName?.trim() ?? "";
   const reviews = body.reviews ?? [];
+  const lang = body.lang === "en" ? "en" : "ko";
 
   if (!placeName || reviews.length === 0) {
     return NextResponse.json({ error: "placeName and a non-empty reviews array are required" }, { status: 400 });
   }
 
   try {
-    const analysis = await analyzeReviews(placeName, reviews);
+    const analysis = await analyzeReviews(placeName, reviews, lang);
     return NextResponse.json({ analysis });
   } catch (error) {
     if (error instanceof GeminiConfigError) {

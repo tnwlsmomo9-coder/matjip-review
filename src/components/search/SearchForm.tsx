@@ -1,6 +1,20 @@
 "use client";
 
 import { Search } from "lucide-react";
+import { useLanguage, type Lang } from "@/components/LanguageProvider";
+
+const copy: Record<Lang, { placeholder: string; ariaLabel: string; submit: string }> = {
+  ko: {
+    placeholder: "맛집, 카페, 지역을 검색해보세요",
+    ariaLabel: "맛집 검색어",
+    submit: "검색",
+  },
+  en: {
+    placeholder: "Search restaurants, cafes, or areas",
+    ariaLabel: "Restaurant search query",
+    submit: "Search",
+  },
+};
 
 interface SearchFormProps {
   query: string;
@@ -10,6 +24,9 @@ interface SearchFormProps {
 }
 
 export default function SearchForm({ query, onQueryChange, onSubmit, disabled }: SearchFormProps) {
+  const { lang } = useLanguage();
+  const t = copy[lang];
+
   return (
     <form
       onSubmit={(event) => {
@@ -24,9 +41,9 @@ export default function SearchForm({ query, onQueryChange, onSubmit, disabled }:
           type="text"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="맛집, 카페, 지역을 검색해보세요"
+          placeholder={t.placeholder}
           className="w-full bg-transparent text-sm text-ink placeholder:text-ink/40 focus:outline-none"
-          aria-label="맛집 검색어"
+          aria-label={t.ariaLabel}
         />
       </div>
       <button
@@ -34,7 +51,7 @@ export default function SearchForm({ query, onQueryChange, onSubmit, disabled }:
         disabled={disabled}
         className="shrink-0 rounded-[10px] bg-accent px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
       >
-        검색
+        {t.submit}
       </button>
     </form>
   );

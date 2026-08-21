@@ -56,10 +56,19 @@ const RESPONSE_SCHEMA = {
   required: ["sentiment", "keywords", "summary"],
 };
 
-function buildPrompt(placeName: string, reviews: { rating: number; text: string }[]): string {
+function buildPrompt(placeName: string, reviews: { rating: number; text: string }[], lang: "ko" | "en"): string {
   const reviewList = reviews
     .map((review, index) => `${index + 1}. [${review.rating}점] ${review.text || "(내용 없음)"}`)
     .join("\n");
+
+  // The reviews themselves are already in `lang` by the time they get here
+  // (fetched via getPlaceReviewDetails(placeId, lang)), so only the output
+  // instruction needs to change — Gemini naturally continues in English
+  // once it's reading English review text anyway.
+  const outputLanguageInstruction =
+    lang === "en"
+      ? "summary와 keywords의 word는 영어로 작성하세요."
+      : "summary와 keywords의 word는 한국어로 작성하세요.";
 
   return `당신은 음식점 리뷰 분석가입니다. 아래는 '${placeName}'에 대한 구글 리뷰 ${reviews.length}개입니다.
 
@@ -69,12 +78,14 @@ ${reviewList}
 다음 3가지 작업을 수행해 JSON으로만 답하세요:
 1. 각 리뷰를 긍정/보통/부정으로 분류하고 개수를 세세요. 리뷰 본문의 어조와 별점을 함께 근거로 사용하세요. positive+neutral+negative의 합은 반드시 ${reviews.length}여야 합니다.
 2. 리뷰에 자주 나오는 핵심 단어를 8~15개 뽑으세요. 음식 이름, 맛, 분위기, 서비스 위주로 고르고, 각 단어가 리뷰에서 얼마나 중요하게 언급되는지 1~10점으로 매기고, 그 단어가 주로 긍정적 맥락인지 부정적 맥락인지 표시하세요.
-3. 이 가게에 대한 리뷰 전체를 한국어 한 문장으로 요약하세요.`;
+3. 이 가게에 대한 리뷰 전체를 한 문장으로 요약하세요.
+${outputLanguageInstruction}`;
 }
 
 export async function analyzeReviews(
   placeName: string,
-  reviews: { rating: number; text: string }[]
+  reviews: { rating: number; text: string }[],
+  lang: "ko" | "en"
 ): Promise<ReviewAnalysis> {
   if (!API_KEY) {
     throw new GeminiConfigError();
@@ -87,7 +98,7 @@ export async function analyzeReviews(
       "x-goog-api-key": API_KEY,
     },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: buildPrompt(placeName, reviews) }] }],
+      contents: [{ parts: [{ text: buildPrompt(placeName, reviews, lang) }] }],
       generationConfig: {
         // This extraction task doesn't need deep reasoning — LOW keeps
         // latency/token usage down (no thinking tokens) without hurting

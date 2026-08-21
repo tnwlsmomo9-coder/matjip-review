@@ -111,15 +111,19 @@ export async function findNearbyPlaceId(
   return nearest.place.id;
 }
 
+// `lang` only affects this display-content call, never the name-matching
+// step above — Google would otherwise translate displayName too and break
+// matching against Kakao's Korean place_name.
 export async function getPlaceReviewDetails(
   placeId: string,
+  lang: "ko" | "en",
   signal?: AbortSignal
 ): Promise<GooglePlaceReviewData> {
   if (!API_KEY) {
     throw new GooglePlacesConfigError();
   }
 
-  const response = await fetch(`${PLACE_DETAILS_URL}/${placeId}?languageCode=ko`, {
+  const response = await fetch(`${PLACE_DETAILS_URL}/${placeId}?languageCode=${lang}`, {
     headers: {
       "X-Goog-Api-Key": API_KEY,
       "X-Goog-FieldMask": "displayName,rating,userRatingCount,reviews,googleMapsUri",
@@ -132,6 +136,7 @@ export async function getPlaceReviewDetails(
   }
 
   const data = (await response.json()) as GooglePlaceDetailsResponse;
+  const anonymousLabel = lang === "en" ? "Anonymous" : "익명";
 
   return {
     name: data.displayName?.text ?? "",
@@ -139,7 +144,7 @@ export async function getPlaceReviewDetails(
     userRatingCount: data.userRatingCount ?? 0,
     googleMapsUri: data.googleMapsUri ?? "",
     reviews: (data.reviews ?? []).map((review) => ({
-      authorName: review.authorAttribution?.displayName ?? "익명",
+      authorName: review.authorAttribution?.displayName ?? anonymousLabel,
       rating: review.rating ?? 0,
       relativeTime: review.relativePublishTimeDescription ?? "",
       text: review.text?.text ?? review.originalText?.text ?? "",
