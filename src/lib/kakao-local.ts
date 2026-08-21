@@ -159,10 +159,24 @@ export async function searchRestaurantsAndCafes(
   return combined.sort((a, b) => Number(a.distance) - Number(b.distance));
 }
 
+// Cuisine labels that actually show up as real Kakao category/name text, so
+// appending them to the search keyword below is worth doing. "기타음식점" is
+// our own catch-all bucket, not a term real listings are tagged with, so
+// there's nothing meaningful to bias a second query toward for it.
+const CUISINE_SEARCH_KEYWORDS = new Set(["한식", "중식", "일식", "양식"]);
+
 // Single entry point for the category chip filter: "all" combines
 // restaurants+cafes (up to 90), "카페" is a plain CE7 query, and each cuisine
-// value fetches all FD6 (음식점) results once and narrows to that cuisine
-// client-side, since Kakao has no cuisine-level category code to filter by.
+// value narrows to that cuisine client-side, since Kakao has no cuisine-level
+// category code to filter by.
+//
+// A single plain FD6 query only returns up to Kakao's 45-document cap across
+// *all* cuisines mixed together, so narrowing it down to one cuisine
+// client-side often leaves very few results. For 한식/중식/일식/양식, a second
+// query with the cuisine name appended to the keyword text (e.g. "강남역 한식")
+// gets its own independent 45-document cap that Kakao itself biases toward
+// that cuisine — combining both (deduped) surfaces far more real matches
+// than filtering a single capped set ever could.
 export async function searchByFilter(
   params: Omit<KakaoSearchParams, "page" | "size" | "category_group_code">,
   filter: CategoryFilterValue,
@@ -174,8 +188,27 @@ export async function searchByFilter(
   if (filter === "카페") {
     return searchKeywordAll({ ...params, category_group_code: "CE7" }, signal);
   }
-  const documents = await searchKeywordAll({ ...params, category_group_code: "FD6" }, signal);
-  return documents.filter((doc) => cuisineOf(doc) === filter);
+
+  const queries = [searchKeywordAll({ ...params, category_group_code: "FD6" }, signal)];
+  if (CUISINE_SEARCH_KEYWORDS.has(filter)) {
+    const biasedQuery = params.query ? `${params.query} ${filter}` : filter;
+    queries.push(searchKeywordAll({ ...params, query: biasedQuery, category_group_code: "FD6" }, signal));
+  }
+
+  const resultSets = await Promise.all(queries);
+  const seen = new Set<string>();
+  const combined: KakaoPlaceDocument[] = [];
+  for (const doc of resultSets.flat()) {
+    if (seen.has(doc.id) || cuisineOf(doc) !== filter) continue;
+    seen.add(doc.id);
+    combined.push(doc);
+  }
+
+  if (params.sort === "distance") {
+    combined.sort((a, b) => Number(a.distance) - Number(b.distance));
+  }
+
+  return combined;
 }
 
 // Category-based search near a given coordinate, sorted by distance by default.
