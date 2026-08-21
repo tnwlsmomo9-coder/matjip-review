@@ -1,15 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import SearchResultCard from "@/components/search/SearchResultCard";
 import { getFavorites } from "@/lib/favorites";
 import type { KakaoPlaceDocument } from "@/types/kakao";
 import { useLanguage, type Lang } from "@/components/LanguageProvider";
+import { useAuth } from "@/components/AuthProvider";
 
 const copy: Record<
   Lang,
-  { title: string; subtitle: string; home: string; empty: string; searchCta: string }
+  {
+    title: string;
+    subtitle: string;
+    home: string;
+    empty: string;
+    searchCta: string;
+    loginRequired: string;
+    loginCta: string;
+  }
 > = {
   ko: {
     title: "찜목록",
@@ -17,6 +26,8 @@ const copy: Record<
     home: "처음 화면",
     empty: "아직 찜한 맛집이 없어요.",
     searchCta: "맛집 검색하러 가기",
+    loginRequired: "찜목록은 로그인 후 이용할 수 있어요.",
+    loginCta: "로그인하기",
   },
   en: {
     title: "Favorites",
@@ -24,13 +35,25 @@ const copy: Record<
     home: "Home",
     empty: "No favorites yet.",
     searchCta: "Go search restaurants",
+    loginRequired: "Log in to view your favorites.",
+    loginCta: "Log in",
   },
 };
 
 export default function FavoritesPage() {
   const { lang } = useLanguage();
   const t = copy[lang];
-  const [favorites, setFavorites] = useState<KakaoPlaceDocument[]>(() => getFavorites());
+  const { user, loading, openAuthModal } = useAuth();
+  const [favorites, setFavorites] = useState<KakaoPlaceDocument[]>([]);
+
+  // Read localStorage after mount rather than in useState's initializer, so
+  // server-rendered markup and the first client render match (avoids a
+  // hydration mismatch). Deferred so this setState doesn't run synchronously
+  // within the effect body — same pattern as LanguageProvider.
+  useEffect(() => {
+    const timeoutId = setTimeout(() => setFavorites(getFavorites()), 0);
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   const handleFavoriteChange = (place: KakaoPlaceDocument, favorited: boolean) => {
     if (favorited) return;
@@ -52,7 +75,18 @@ export default function FavoritesPage() {
         </Link>
       </div>
 
-      {favorites.length === 0 ? (
+      {!loading && !user ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-[10px] border border-hairline bg-white px-4 py-16 text-center">
+          <p className="text-sm text-ink/60">{t.loginRequired}</p>
+          <button
+            type="button"
+            onClick={openAuthModal}
+            className="text-sm font-medium text-accent underline underline-offset-2"
+          >
+            {t.loginCta}
+          </button>
+        </div>
+      ) : favorites.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-[10px] border border-hairline bg-white px-4 py-16 text-center">
           <p className="text-sm text-ink/60">{t.empty}</p>
           <Link

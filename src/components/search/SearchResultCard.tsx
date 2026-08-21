@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Heart, MapPin, Phone } from "lucide-react";
 import type { KakaoPlaceDocument } from "@/types/kakao";
 import GoogleReviewsModal from "@/components/search/GoogleReviewsModal";
 import { isFavorited as getIsFavorited, toggleFavorite } from "@/lib/favorites";
 import { useLanguage, type Lang } from "@/components/LanguageProvider";
+import { useAuth } from "@/components/AuthProvider";
 
 const copy: Record<Lang, { favorite: string; unfavorite: string; viewOnKakaoMap: string }> = {
   ko: { favorite: "찜하기", unfavorite: "찜 해제", viewOnKakaoMap: "카카오맵에서 보기" },
@@ -27,9 +28,19 @@ interface SearchResultCardProps {
 export default function SearchResultCard({ place, onFavoriteChange }: SearchResultCardProps) {
   const { lang } = useLanguage();
   const t = copy[lang];
+  const { user, openAuthModal } = useAuth();
   const address = place.road_address_name || place.address_name;
   const [reviewsOpen, setReviewsOpen] = useState(false);
-  const [favorited, setFavorited] = useState(() => getIsFavorited(place.id));
+  const [favorited, setFavorited] = useState(false);
+
+  // Read localStorage after mount, not in useState's initializer, so
+  // server-rendered markup and the first client render match (avoids a
+  // hydration mismatch). Deferred so this setState doesn't run synchronously
+  // within the effect body — same pattern as LanguageProvider.
+  useEffect(() => {
+    const timeoutId = setTimeout(() => setFavorited(getIsFavorited(place.id)), 0);
+    return () => clearTimeout(timeoutId);
+  }, [place.id]);
 
   return (
     <>
@@ -59,6 +70,10 @@ export default function SearchResultCard({ place, onFavoriteChange }: SearchResu
               aria-pressed={favorited}
               onClick={(event) => {
                 event.stopPropagation();
+                if (!user) {
+                  openAuthModal();
+                  return;
+                }
                 const next = toggleFavorite(place);
                 setFavorited(next);
                 onFavoriteChange?.(place, next);
