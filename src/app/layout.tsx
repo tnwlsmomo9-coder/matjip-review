@@ -9,7 +9,7 @@ const interTight = Inter_Tight({
 });
 
 export const metadata: Metadata = {
-  title: "맛집리뷰",
+  title: "찍고",
   description: "진짜 리뷰다운 리뷰로 찾는 맛집",
 };
 
