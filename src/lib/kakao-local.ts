@@ -30,7 +30,7 @@ export class KakaoConfigError extends Error {
 // CE7 (카페), with no code for cuisine types like 한식/중식. Those only show
 // up as the second segment of `category_name` (e.g. "음식점 > 한식 > 한정식"),
 // so cuisine filtering has to happen client-side after fetching FD6 results.
-export type CategoryFilterValue = "all" | "한식" | "중식" | "일식" | "양식" | "기타음식점" | "카페";
+export type CategoryFilterValue = "all" | "한식" | "중식" | "일식" | "양식" | "분식" | "기타음식점" | "카페";
 
 export const CATEGORY_GROUPS: { label: string; value: CategoryFilterValue }[] = [
   { label: "전체", value: "all" },
@@ -38,11 +38,12 @@ export const CATEGORY_GROUPS: { label: string; value: CategoryFilterValue }[] = 
   { label: "중식", value: "중식" },
   { label: "일식", value: "일식" },
   { label: "양식", value: "양식" },
+  { label: "분식", value: "분식" },
   { label: "그외", value: "기타음식점" },
   { label: "카페", value: "카페" },
 ];
 
-const CUISINE_LABELS = new Set(["한식", "중식", "일식", "양식"]);
+const CUISINE_LABELS = new Set(["한식", "중식", "일식", "양식", "분식"]);
 
 function cuisineOf(doc: KakaoPlaceDocument): string {
   const mid = doc.category_name.split(" > ")[1]?.trim();
@@ -163,7 +164,7 @@ export async function searchRestaurantsAndCafes(
 // appending them to the search keyword below is worth doing. "기타음식점" is
 // our own catch-all bucket, not a term real listings are tagged with, so
 // there's nothing meaningful to bias a second query toward for it.
-const CUISINE_SEARCH_KEYWORDS = new Set(["한식", "중식", "일식", "양식"]);
+const CUISINE_SEARCH_KEYWORDS = new Set(["한식", "중식", "일식", "양식", "분식"]);
 
 // Single entry point for the category chip filter: "all" combines
 // restaurants+cafes (up to 90), "카페" is a plain CE7 query, and each cuisine
