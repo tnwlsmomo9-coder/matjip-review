@@ -10,12 +10,11 @@ import {
   KakaoApiError,
   KakaoConfigError,
   searchByFilter,
-  searchCategoryAll,
+  searchNearbyByFilter,
   type CategoryFilterValue,
 } from "@/lib/kakao-local";
 import type { KakaoPlaceDocument } from "@/types/kakao";
 
-const NEARBY_CATEGORY_CODE = "FD6"; // 음식점
 const PAGE_SIZE = 30;
 
 type Status = "idle" | "loading" | "success" | "error";
@@ -82,7 +81,7 @@ function SearchPageInner() {
     }
   };
 
-  const runNearbySearch = async (nearbyLat: string, nearbyLng: string) => {
+  const runNearbySearch = async (nearbyLat: string, nearbyLng: string, category: CategoryFilterValue = "all") => {
     abortControllerRef.current?.abort();
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -90,8 +89,9 @@ function SearchPageInner() {
     setErrorMessage(null);
 
     try {
-      const documents = await searchCategoryAll(
-        { category_group_code: NEARBY_CATEGORY_CODE, x: nearbyLng, y: nearbyLat, sort: "distance" },
+      const documents = await searchNearbyByFilter(
+        { x: nearbyLng, y: nearbyLat },
+        category,
         controller.signal
       );
       setAllResults(documents);
@@ -121,6 +121,25 @@ function SearchPageInner() {
     // Only run once on mount, for the state the user arrived with via /search?q=... or ?lat=&lng=
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const isFirstCategoryChange = useRef(true);
+
+  // On the "내 주변" screen (coordinates but no typed keyword), the category
+  // chips have no search button to submit — selecting one should immediately
+  // re-run the nearby search filtered to that category. Once the user types
+  // something, chip changes go back to applying on the next form submit
+  // (handleSubmit below), same as the keyword-search flow.
+  useEffect(() => {
+    if (isFirstCategoryChange.current) {
+      isFirstCategoryChange.current = false;
+      return;
+    }
+    if (!hasCoords || query.trim() || !lat || !lng) return;
+    // Deferred so the setState inside runNearbySearch doesn't run synchronously within the effect.
+    const timeoutId = setTimeout(() => runNearbySearch(lat, lng, selectedCategory), 0);
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory]);
 
   const handleSubmit = () => runKeywordSearch(query, selectedCategory);
 

@@ -259,3 +259,35 @@ export async function searchCategoryAll(
 ): Promise<KakaoPlaceDocument[]> {
   return fetchAll((page) => searchCategory({ ...params, page, size: KAKAO_PAGE_SIZE }, signal));
 }
+
+// Category-chip filter for the "내 주변" flow, where there's no typed keyword
+// to anchor a query on. "all"/"카페" map straight onto Kakao's category codes
+// via searchCategoryAll, same as the plain nearby search. A cuisine label has
+// no category code (see searchByFilter above), so it's fetched via a keyword
+// search using the cuisine name itself as the query text, anchored to the
+// coordinate and sorted by distance. "기타음식점" has no keyword to anchor on
+// either, so it falls back to filtering the same FD6 nearby list "all" uses.
+export async function searchNearbyByFilter(
+  coords: { x: string; y: string },
+  filter: CategoryFilterValue,
+  signal?: AbortSignal
+): Promise<KakaoPlaceDocument[]> {
+  if (filter === "all") {
+    return searchCategoryAll({ category_group_code: "FD6", x: coords.x, y: coords.y, sort: "distance" }, signal);
+  }
+  if (filter === "카페") {
+    return searchCategoryAll({ category_group_code: "CE7", x: coords.x, y: coords.y, sort: "distance" }, signal);
+  }
+  if (CUISINE_SEARCH_KEYWORDS.has(filter)) {
+    const documents = await searchKeywordAll(
+      { query: filter, category_group_code: "FD6", x: coords.x, y: coords.y, sort: "distance" },
+      signal
+    );
+    return documents.filter((doc) => cuisineOf(doc) === filter);
+  }
+  const documents = await searchCategoryAll(
+    { category_group_code: "FD6", x: coords.x, y: coords.y, sort: "distance" },
+    signal
+  );
+  return documents.filter((doc) => cuisineOf(doc) === filter);
+}
