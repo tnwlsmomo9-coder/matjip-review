@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { mapAuthErrorMessage } from "@/lib/auth-errors";
@@ -43,6 +43,7 @@ export default function AuthModal() {
   const { lang } = useLanguage();
   const t = copy[lang];
   const { isAuthModalOpen, closeAuthModal } = useAuth();
+  const formRef = useRef<HTMLFormElement>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -60,36 +61,54 @@ export default function AuthModal() {
   const handleSignIn = async () => {
     setError(null);
     setSubmitting(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setSubmitting(false);
-    if (error) {
-      setError(mapAuthErrorMessage(error.message, lang));
-      return;
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setError(mapAuthErrorMessage(error.message, lang));
+        return;
+      }
+      handleClose();
+    } catch {
+      // Network failure or anything else signInWithPassword doesn't hand
+      // back as `error` — without this the button would just look dead.
+      setError(mapAuthErrorMessage("", lang));
+    } finally {
+      setSubmitting(false);
     }
-    handleClose();
   };
 
   const handleSignUp = async () => {
+    // Unlike the 로그인 button, this one isn't type="submit", so the
+    // browser's required-field validation never runs on its own — without
+    // this, an empty click sends a credential-less signup straight to
+    // Supabase, which rejects it as an anonymous sign-in attempt.
+    if (!formRef.current?.reportValidity()) return;
     setError(null);
     setSubmitting(true);
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    setSubmitting(false);
-    if (error) {
-      setError(mapAuthErrorMessage(error.message, lang));
-      return;
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        setError(mapAuthErrorMessage(error.message, lang));
+        return;
+      }
+      // Confirmation-disabled projects still don't create a duplicate
+      // account for an already-registered email — they instead return a
+      // user with no identities and no error, to avoid leaking which
+      // emails exist.
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        setError(mapAuthErrorMessage("already registered", lang));
+        return;
+      }
+      if (!data.session) {
+        setError(t.emailConfirmationRequired);
+        return;
+      }
+      handleClose();
+    } catch {
+      setError(mapAuthErrorMessage("", lang));
+    } finally {
+      setSubmitting(false);
     }
-    // Confirmation-disabled projects still don't create a duplicate account
-    // for an already-registered email — they instead return a user with no
-    // identities and no error, to avoid leaking which emails exist.
-    if (data.user && data.user.identities && data.user.identities.length === 0) {
-      setError(mapAuthErrorMessage("already registered", lang));
-      return;
-    }
-    if (!data.session) {
-      setError(t.emailConfirmationRequired);
-      return;
-    }
-    handleClose();
   };
 
   return (
@@ -113,6 +132,7 @@ export default function AuthModal() {
           </button>
         </div>
         <form
+          ref={formRef}
           className="flex flex-col gap-3"
           onSubmit={(event) => {
             event.preventDefault();

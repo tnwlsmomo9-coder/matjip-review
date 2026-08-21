@@ -28,6 +28,14 @@ const rules: { test: (message: string) => boolean; ko: string; en: string }[] = 
     ko: "이메일 인증이 필요합니다.",
     en: "Please confirm your email before signing in.",
   },
+  {
+    // Supabase's generic "no credentials supplied" response — surfaces if
+    // email/password are empty (the 회원가입 button skips native
+    // required-field validation since it isn't a submit button).
+    test: (m) => /anonymous sign-ins are disabled/i.test(m),
+    ko: "이메일과 비밀번호를 입력해주세요.",
+    en: "Please enter both an email and a password.",
+  },
 ];
 
 export function mapAuthErrorMessage(message: string, lang: Lang): string {
