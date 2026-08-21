@@ -1,18 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Phone } from "lucide-react";
+import { Heart, MapPin, Phone } from "lucide-react";
 import type { KakaoPlaceDocument } from "@/types/kakao";
 import GoogleReviewsModal from "@/components/search/GoogleReviewsModal";
+import { isFavorited as getIsFavorited, toggleFavorite } from "@/lib/favorites";
 
 function lastCategorySegment(categoryName: string): string {
   const segments = categoryName.split(" > ").filter(Boolean);
   return segments.length > 0 ? segments[segments.length - 1] : categoryName;
 }
 
-export default function SearchResultCard({ place }: { place: KakaoPlaceDocument }) {
+interface SearchResultCardProps {
+  place: KakaoPlaceDocument;
+  // Only passed by the 찜목록 page, so unfavoriting there removes the card
+  // immediately instead of leaving a stale unfilled heart in the list.
+  onFavoriteChange?: (place: KakaoPlaceDocument, favorited: boolean) => void;
+}
+
+export default function SearchResultCard({ place, onFavoriteChange }: SearchResultCardProps) {
   const address = place.road_address_name || place.address_name;
   const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [favorited, setFavorited] = useState(() => getIsFavorited(place.id));
 
   return (
     <>
@@ -28,13 +37,29 @@ export default function SearchResultCard({ place }: { place: KakaoPlaceDocument 
         }}
         className="flex cursor-pointer flex-col gap-2 rounded-[10px] border border-hairline bg-white p-5 transition-colors hover:border-ink/20"
       >
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-start justify-between gap-2">
           <h3 className="font-heading text-base font-bold text-ink">{place.place_name}</h3>
-          {place.category_name && (
-            <span className="shrink-0 text-xs font-medium text-ink/50">
-              {lastCategorySegment(place.category_name)}
-            </span>
-          )}
+          <div className="flex shrink-0 items-center gap-1.5">
+            {place.category_name && (
+              <span className="text-xs font-medium text-ink/50">
+                {lastCategorySegment(place.category_name)}
+              </span>
+            )}
+            <button
+              type="button"
+              aria-label={favorited ? "찜 해제" : "찜하기"}
+              aria-pressed={favorited}
+              onClick={(event) => {
+                event.stopPropagation();
+                const next = toggleFavorite(place);
+                setFavorited(next);
+                onFavoriteChange?.(place, next);
+              }}
+              className="rounded-[10px] p-1 text-ink/40 transition-colors hover:text-accent"
+            >
+              <Heart className={favorited ? "h-4 w-4 fill-accent text-accent" : "h-4 w-4"} aria-hidden />
+            </button>
+          </div>
         </div>
         {address && (
           <p className="flex items-center gap-1 text-xs text-ink/50">
