@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import CategoryChips from "@/components/search/CategoryChips";
 import SearchForm from "@/components/search/SearchForm";
@@ -151,13 +152,21 @@ function SearchPageInner() {
 
   return (
     <main className="mx-auto flex w-full max-w-[1180px] flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-2xl font-bold text-ink">내 주변 맛집</h1>
-        <p className="text-sm text-ink/60">
-          {hasCoords
-            ? "가까운 순서로 맛집을 보여드려요."
-            : "키워드나 카테고리로 근처 맛집을 검색해보세요."}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="font-heading text-2xl font-bold text-ink">내 주변 맛집</h1>
+          <p className="text-sm text-ink/60">
+            {hasCoords
+              ? "가까운 순서로 맛집을 보여드려요."
+              : "키워드나 카테고리로 근처 맛집을 검색해보세요."}
+          </p>
+        </div>
+        <Link
+          href="/"
+          className="shrink-0 rounded-[10px] border border-hairline px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+        >
+          처음 화면
+        </Link>
       </div>
 
       <div className="flex flex-col gap-4">
