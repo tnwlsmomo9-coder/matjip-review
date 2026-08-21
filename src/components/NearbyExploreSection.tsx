@@ -1,12 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, MapPin } from "lucide-react";
 import SplitReveal, { type SplitToken } from "@/components/SplitReveal";
+import SearchBar from "@/components/SearchBar";
 
 type Lang = "ko" | "en";
 
-const copy: Record<Lang, { heading: SplitToken[]; body: string; cta: string }> = {
+const copy: Record<
+  Lang,
+  { heading: SplitToken[]; body: string; cta: string; locating: string; locationError: string }
+> = {
   ko: {
     heading: [
       { type: "word", parts: [{ text: "지금" }] },
@@ -21,6 +26,8 @@ const copy: Record<Lang, { heading: SplitToken[]; body: string; cta: string }> =
     ],
     body: "위치 권한을 허용하면 가장 가까운 맛집부터 보여드려요",
     cta: "내 주변 맛집 탐색하기",
+    locating: "위치 확인 중...",
+    locationError: "위치 접근을 허용해주세요.",
   },
   en: {
     heading: [
@@ -34,16 +41,48 @@ const copy: Record<Lang, { heading: SplitToken[]; body: string; cta: string }> =
     ],
     body: "Allow location access and we'll show the closest spots first",
     cta: "Explore restaurants near me",
+    locating: "Locating...",
+    locationError: "Please allow location access.",
   },
 };
 
 export default function NearbyExploreSection() {
   const [lang, setLang] = useState<Lang>("ko");
+  const [query, setQuery] = useState("");
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState(false);
+  const router = useRouter();
   const t = copy[lang];
 
+  const handleKeywordSearch = () => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+  };
+
+  const handleExploreNearby = () => {
+    if (!("geolocation" in navigator)) {
+      setLocationError(true);
+      return;
+    }
+    setLocating(true);
+    setLocationError(false);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        router.push(`/search?lat=${latitude}&lng=${longitude}`);
+      },
+      () => {
+        setLocating(false);
+        setLocationError(true);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   return (
-    <section className="mx-auto w-full max-w-md sm:max-w-lg lg:max-w-md">
-      <div className="relative flex aspect-square flex-col items-center justify-center gap-3 rounded-[10px] border border-hairline bg-accent/5 p-6 text-center sm:gap-4 sm:p-8 lg:gap-3 lg:p-8">
+    <section className="mx-auto w-full max-w-md sm:max-w-lg lg:max-w-2xl">
+      <div className="relative flex flex-col items-center gap-5 rounded-[10px] border border-hairline bg-accent/5 p-6 pt-16 text-center sm:gap-6 sm:p-8 sm:pt-16 lg:gap-6 lg:p-10 lg:pt-16">
         <div className="absolute top-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-[10px] border border-hairline bg-white p-1 sm:top-5 lg:top-6">
           {(["ko", "en"] as const).map((l) => (
             <button
@@ -69,13 +108,27 @@ export default function NearbyExploreSection() {
           </h2>
           <p className="mt-1 text-sm text-ink/60 sm:text-base">{t.body}</p>
         </div>
-        <button
-          type="button"
-          className="flex shrink-0 items-center gap-2 rounded-[10px] bg-accent px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent/90 sm:px-6 sm:py-3.5 sm:text-base"
-        >
-          <MapPin className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
-          {t.cta}
-        </button>
+
+        <div className="w-full text-left">
+          <SearchBar value={query} onChange={setQuery} onSubmit={handleKeywordSearch} />
+        </div>
+
+        <div className="flex flex-col items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExploreNearby}
+            disabled={locating}
+            className="flex shrink-0 items-center gap-2 rounded-[10px] bg-accent px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:opacity-70 sm:px-6 sm:py-3.5 sm:text-base"
+          >
+            {locating ? (
+              <Loader2 className="h-4 w-4 animate-spin sm:h-5 sm:w-5" aria-hidden />
+            ) : (
+              <MapPin className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
+            )}
+            {locating ? t.locating : t.cta}
+          </button>
+          {locationError && <p className="text-xs text-accent">{t.locationError}</p>}
+        </div>
       </div>
     </section>
   );

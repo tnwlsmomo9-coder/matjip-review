@@ -1,23 +1,23 @@
 "use client";
 
-import { CATEGORY_GROUPS } from "@/lib/kakao-local";
+import { CATEGORY_GROUPS, type CategoryFilterValue } from "@/lib/kakao-local";
 
 interface CategoryChipsProps {
-  selected: string | undefined;
-  onSelect: (code: string | undefined) => void;
+  selected: CategoryFilterValue;
+  onSelect: (value: CategoryFilterValue) => void;
 }
 
 export default function CategoryChips({ selected, onSelect }: CategoryChipsProps) {
   return (
     <div className="flex flex-wrap gap-2">
       {CATEGORY_GROUPS.map((group) => {
-        const isActive = selected === group.code;
+        const isActive = selected === group.value;
         return (
           <button
-            key={group.label}
+            key={group.value}
             type="button"
             aria-pressed={isActive}
-            onClick={() => onSelect(group.code)}
+            onClick={() => onSelect(group.value)}
             className={
               isActive
                 ? "rounded-[10px] bg-accent px-4 py-2 text-sm font-bold text-white"

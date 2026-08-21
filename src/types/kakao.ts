@@ -37,4 +37,15 @@ export interface KakaoSearchParams {
   x?: string;
   y?: string;
   radius?: number;
+  sort?: "distance" | "accuracy";
+}
+
+export interface KakaoCategorySearchParams {
+  category_group_code: string;
+  x: string;
+  y: string;
+  radius?: number;
+  sort?: "distance" | "accuracy";
+  page?: number;
+  size?: number;
 }
