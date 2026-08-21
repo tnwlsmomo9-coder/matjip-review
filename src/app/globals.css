@@ -9,6 +9,10 @@
   --color-accent-sub: #FFC93C;
   --color-hairline: #E5E5E2;
 
+  --color-positive: #2F9E44;
+  --color-neutral: #F5A623;
+  --color-negative: #E03131;
+
   --font-heading: "PretendardVariable", var(--font-inter-tight), sans-serif;
   --font-body: "PretendardVariable", sans-serif;
 

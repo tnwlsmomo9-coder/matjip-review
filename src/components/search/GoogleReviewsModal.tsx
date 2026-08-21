@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import type { KakaoPlaceDocument } from "@/types/kakao";
 import type { GooglePlaceReviewData, GooglePlaceReviewResult } from "@/types/google-places";
 import { getCachedGoogleReview, setCachedGoogleReview } from "@/lib/review-cache";
+import ReviewAnalysisPanel from "@/components/search/ReviewAnalysisPanel";
 
 type ReviewView =
   | { status: "loading" }
@@ -110,6 +111,10 @@ export default function GoogleReviewsModal({ place, onClose }: GoogleReviewsModa
             <span className="inline-flex w-fit items-center rounded-[10px] bg-accent-sub/30 px-2.5 py-1 text-xs font-semibold text-ink">
               ⭐ {view.data.rating.toFixed(1)} · 리뷰 {view.data.userRatingCount}개
             </span>
+
+            {view.data.reviews.length > 0 && (
+              <ReviewAnalysisPanel placeId={place.id} placeName={view.data.name} reviews={view.data.reviews} />
+            )}
 
             <ul className="flex flex-col gap-3">
               {view.data.reviews.map((review, index) => (
