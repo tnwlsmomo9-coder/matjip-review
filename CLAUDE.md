@@ -19,7 +19,11 @@ This is the mock/static-UI first pass of a restaurant review service. Two docs a
 - `PRD_1.md` — product scope, MVP vs Phase 2, feature definitions (search/explore, guided reviews, receipt-verified anti-troll reviews, trust scoring, etc.)
 - `DESIGN_1.md` — mood, color palette, typography, and component style rules
 
-Current scope is intentionally narrow: **no backend, no auth, no database**. The home page still renders entirely from static mock data in `src/lib/mock-restaurants.ts`, and location-based features there remain UI-only (no `navigator.geolocation` calls). The one exception is `/search` (`src/app/search/page.tsx`), which calls the real Kakao Local API client-side via `src/lib/kakao-local.ts`, gated by the `NEXT_PUBLIC_KAKAO_REST_API_KEY` env var (see `.env.local.example` for setup). Don't wire up further real integrations (e.g. Naver, a second map provider) unless asked.
+Current scope is intentionally narrow: **no auth, no database**. Two real integrations exist:
+- `/search` (`src/app/search/page.tsx`) calls the real Kakao Local API client-side via `src/lib/kakao-local.ts`, gated by the `NEXT_PUBLIC_KAKAO_REST_API_KEY` env var (see `.env.local.example` for setup). The home page's "내 주변 맛집 탐색하기" button in `NearbyExploreSection` uses a real `navigator.geolocation.getCurrentPosition` call and routes to `/search?lat=&lng=`, which runs a distance-sorted Kakao category search (`searchCategory`) instead of the old mock-only flow.
+- Clicking a `SearchResultCard` opens a Google reviews modal (`src/components/search/GoogleReviewsModal.tsx`) that hits the first (and only) server route in this repo, `src/app/api/google-place-reviews/route.ts`, which calls Google Places API (New) server-side via `src/lib/google-places.ts` using the server-only `GOOGLE_PLACES_API_KEY` env var (never `NEXT_PUBLIC_`). This is why `next.config.ts` no longer sets `output: "export"` — the app needs a real Next.js server build. Deployment is Vercel-only; the earlier GitHub Pages static-export workflow was removed since it can't run a server route.
+
+Don't wire up further real integrations (e.g. Naver, a second map provider) unless asked.
 
 ## Architecture
 
