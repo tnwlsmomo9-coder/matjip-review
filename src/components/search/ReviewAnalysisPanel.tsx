@@ -104,7 +104,7 @@ export default function ReviewAnalysisPanel({ placeId, placeName, reviews }: Rev
                 className={keyword.context === "positive" ? "font-semibold text-positive" : "font-semibold text-negative"}
                 style={{ fontSize: `${keywordFontSize(keyword.score)}px` }}
               >
-                {keyword.word}
+                #{keyword.word.replace(/\s+/g, "")}
               </span>
             ))}
           </div>
