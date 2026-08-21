@@ -6,7 +6,7 @@ export default function Home() {
     <>
       <Header />
       <main className="flex flex-1 flex-col pb-16">
-        <div className="relative flex flex-col items-center overflow-hidden px-4 py-12 sm:py-16 lg:py-20">
+        <div className="relative flex flex-1 flex-col items-center overflow-hidden px-4 py-12 sm:py-16 lg:py-20">
           <div
             aria-hidden
             className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-accent/20 blur-3xl sm:h-96 sm:w-96 lg:h-[28rem] lg:w-[28rem]"
